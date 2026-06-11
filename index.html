@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;padding:15px;background:#ff0055;color:#fff;z-index:99999;font-family:monospace;font-size:12px;border-radius:10px;word-break:break-all;';
+            div.innerHTML = '<strong>JS Error:</strong> ' + message + '<br><small>' + source + ' | L:' + lineno + '</small>';
+            document.documentElement.appendChild(div);
+            return false;
+        };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>NEON PULSE – Cyber Arcade</title>
+    <meta name="description" content="Episches Cyber-Arcade-Spiel mit atemberaubenden Galaxy-Sektoren. Optimiert für Mobile.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- ══ FLOATING HUD HEADER ══ -->
+    <header class="hud-header hidden" id="hudHeader">
+        <div class="hud-item">
+            <span class="hud-label">SCORE</span>
+            <span id="score" class="hud-value cyan-glow">000000</span>
+        </div>
+        <div class="hud-title" id="hudTitle">NEON PULSE</div>
+        <div class="hud-item">
+            <span class="hud-label">BEST</span>
+            <span id="high-score" class="hud-value magenta-glow">000000</span>
+        </div>
+    </header>
+
+    <button id="pauseBtn" class="pause-hud-btn hidden" aria-label="Pause">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
+
+    <!-- ══ ENEMY CODEX OVERLAY ══ -->
+    <div id="codexOverlay" class="codex-overlay hidden">
+        <div class="codex-card glass-panel">
+            <div class="card-brand">
+                <span class="brand-dot"></span>
+                <span>SYSTEM ENCYCLOPEDIA</span>
+                <span class="brand-dot"></span>
+            </div>
+            <h2 class="codex-title">FEIND-ANALYSE</h2>
+            
+            <div class="codex-scroll">
+                <div class="codex-item">
+                    <div class="codex-icon standard-icon"></div>
+                    <div class="codex-info">
+                        <div class="codex-name magenta-glow">STANDARD DRONE</div>
+                        <div class="codex-desc">Einfache Patrouille. Berechenbar, aber in Massen gefährlich.</div>
+                    </div>
+                </div>
+                <div class="codex-item">
+                    <div class="codex-icon seeker-icon"></div>
+                    <div class="codex-info">
+                        <div class="codex-name orange-glow">HUNTER SEEKER</div>
+                        <div class="codex-desc">Besitzt Zielerfassung. Verfolgt deine Bewegungen aktiv.</div>
+                    </div>
+                </div>
+                <div class="codex-item">
+                    <div class="codex-icon zigzag-icon"></div>
+                    <div class="codex-info">
+                        <div class="codex-name green-glow">WAVE WEAVER</div>
+                        <div class="codex-desc">Bewegt sich in unvorhersehbaren Sinus-Kurven durch den Raum.</div>
+                    </div>
+                </div>
+                <div class="codex-item">
+                    <div class="codex-icon shooter-icon"></div>
+                    <div class="codex-info">
+                        <div class="codex-name red-glow">PLASMA STRIKER</div>
+                        <div class="codex-desc">Stationäre Artillerie. Feuert Plasma-Geschosse auf deine Position.</div>
+                    </div>
+                </div>
+                <div class="codex-item">
+                    <div class="codex-icon splitter-icon"></div>
+                    <div class="codex-info">
+                        <div class="codex-name purple-glow">VOID SPLITTER</div>
+                        <div class="codex-desc">Teilt sich bei Kontakt oder nach Zeit in zwei kleinere Einheiten auf.</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="closeCodexBtn" class="primary-play-btn codex-btn">VERSTANDEN</button>
+        </div>
+    </div>
+
+    <!-- ══ GAME CANVAS ══ -->
+    <main class="game-viewport">
+        <div class="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- ══ MAIN MENU OVERLAY (FULLSCREEN) ══ -->
+            <div id="menuOverlay" class="galaxy-viewer">
+                <canvas id="menuStarCanvas" class="star-canvas" style="z-index: 0;"></canvas>
+                <div id="galaxyBg" class="galaxy-viewer-bg" style="z-index: 1;"></div>
+                <div class="galaxy-viewer-overlay" style="z-index: 2;"></div>
+
+                <!-- Navigation Arrows on Sides -->
+                <button id="prevGalaxyBtn" class="carousel-nav-btn" aria-label="Vorherige" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); z-index: 10; width: 50px; height: 50px;">
+                    <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+                <button id="nextGalaxyBtn" class="carousel-nav-btn" aria-label="Nächste" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10; width: 50px; height: 50px;">
+                    <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+
+                <!-- Settings Menu Toggle -->
+                <button id="settingsToggleBtn" class="settings-toggle-btn" aria-label="Einstellungen">⚙</button>
+                <div id="settingsDropdown" class="settings-dropdown">
+                    <button id="toggleAudioBtn" class="icon-btn" aria-label="Ton" style="width: 100%;">
+                        <svg class="audio-icon on" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>
+                        <svg class="audio-icon off hidden" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.44 14,18.7V20.76C15.39,20.45 16.66,19.78 17.73,18.9L20.73,21.9L22,20.63L4.27,3M16.5,12C16.5,10.74 15.82,9.62 14,8.94V10.18L16.09,12.27C16.35,11.89 16.5,11.46 16.5,12Z"/></svg>
+                        <span id="audioStatusText" class="icon-btn-label">TON</span>
+                    </button>
+                </div>
+
+                <div class="galaxy-viewer-content" style="z-index: 5; padding-top: 40px;">
+                    <h1 id="menuTitle" class="neon-headline" style="font-size: 2.2rem; margin-bottom: 30px; text-shadow: 0 0 25px var(--theme-glow);">NEON PULSE</h1>
+
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                        
+                        <div id="galaxyDifficulty" class="galaxy-viewer-badge">NORMAL</div>
+                        <h2 id="galaxyName" class="galaxy-viewer-name" style="margin-top: 10px;">Orion Pulse</h2>
+                        <p id="galaxyDescription" class="galaxy-viewer-desc" style="margin-bottom: 25px;">Der klassische Cyber-Sektor.</p>
+
+                        <!-- Action row -->
+                        <div class="action-row" style="width: 100%; margin-bottom: 25px;">
+                            <button id="startBtn" class="primary-play-btn">
+                                <span class="play-icon">▶</span> SPIELEN
+                            </button>
+                        </div>
+                        
+                        <div class="galaxy-viewer-stats" style="margin-bottom: 20px; width: 100%;">
+                            <div class="gv-stat">
+                                <span class="gv-stat-label">TEMPO</span>
+                                <div class="gv-stat-bar"><div class="gv-stat-fill" id="viewerSpeed"></div></div>
+                            </div>
+                            <div class="gv-stat">
+                                <span class="gv-stat-label">SPAWN</span>
+                                <div class="gv-stat-bar"><div class="gv-stat-fill" id="viewerSpawn"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Game Over Stats -->
+                        <div id="statsSummary" class="stats-summary hidden" style="width: 100%; margin-bottom: 15px;">
+                            <div class="summary-item">
+                                <span class="sum-label">DEIN SCORE</span>
+                                <span id="finalScore" class="sum-value cyan-glow">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="sum-label">ORBS</span>
+                                <span id="orbsCollected" class="sum-value green-glow">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Name entry -->
+                        <div id="leaderboardInputContainer" class="leaderboard-input-container hidden" style="width: 100%;">
+                            <p class="input-title">🏆 BESTENLISTE EINTRAGEN</p>
+                            <div class="input-row">
+                                <input type="text" id="playerNameInput" placeholder="CODENAME" maxlength="10" autocomplete="off">
+                                <button id="submitScoreBtn" class="submit-btn">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ CONTROLS HINT (in-game) ══ -->
+            <div id="controlsHint" class="controls-hint">
+                <span class="mobile-hint">Wischen · EMP & LASER rechts · ⏸ oben</span>
+            </div>
+
+            <!-- ══ SPECIAL ATTACKS HUD ══ -->
+            <div id="specialAttacksHud" class="special-hud hidden">
+                <button id="empBtn" class="special-btn emp-btn" disabled aria-label="EMP Nova">
+                    <span class="btn-label">EMP<br>NOVA</span>
+                    <div class="btn-progress" id="empProgress"></div>
+                </button>
+                <button id="laserBtn" class="special-btn laser-btn" disabled aria-label="Plasma Beam">
+                    <span class="btn-label">LASER<br>BEAM</span>
+                    <div class="btn-progress" id="laserProgress"></div>
+                </button>
+            </div>
+
+            <!-- ══ PAUSE OVERLAY ══ -->
+            <div id="pauseOverlay" class="pause-overlay hidden">
+                <div class="pause-card">
+                    <div class="pause-scanlines"></div>
+                    <div class="pause-badge">SYSTEM HALT</div>
+                    <h2 class="pause-title">PAUSE</h2>
+                    <div class="pause-stats">
+                        <div class="pstat">
+                            <span class="pstat-label">SCORE</span>
+                            <span id="pauseScore" class="pstat-value cyan-glow">0</span>
+                        </div>
+                        <div class="pstat">
+                            <span class="pstat-label">HIGHSCORE</span>
+                            <span id="pauseBest" class="pstat-value magenta-glow">0</span>
+                        </div>
+                    </div>
+                    <div class="pause-controls-grid">
+                        <div class="pctrl"><span class="pctrl-key">Wischen</span><span class="pctrl-action">Bewegen</span></div>
+                        <div class="pctrl"><span class="pctrl-key">EMP-Btn</span><span class="pctrl-action">EMP Nova</span></div>
+                        <div class="pctrl"><span class="pctrl-key">Laser-Btn</span><span class="pctrl-action">Plasma Beam</span></div>
+                        <div class="pctrl"><span class="pctrl-key">⏸ / P / Esc</span><span class="pctrl-action">Pause</span></div>
+                    </div>
+                    <div class="pause-actions">
+                        <button id="resumeBtn" class="primary-play-btn">▶ FORTSETZEN</button>
+                        <button id="toggleJoystickBtn" class="viewer-close-btn">🕹 JOYSTICK: AUS</button>
+                        <button id="quitBtn" class="quit-btn">■ AUFGEBEN</button>
+                    </div>
+                    </div>
+                    </div>
+
+                    <!-- ══ VIRTUAL JOYSTICK ══ -->
+                    <div id="joystickContainer" class="joystick-container hidden">
+                    <div id="joystickBase" class="joystick-base">
+                    <div id="joystickStick" class="joystick-stick"></div>
+                    </div>
+                    </div>
+
+                    <!-- ══ GALAXY FULLSCREEN VIEWER ══ -->
+    </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
